@@ -1,5 +1,6 @@
 [workspace]
 package.authors = ["Caio Geraldes <caio.geraldes@usp.br>"]
 package.license-file = "LICENSE"
+package.readme="README.md"
 resolver = "1"
 members = ["api", "cli"]
