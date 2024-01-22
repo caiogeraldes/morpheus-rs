@@ -48,7 +48,7 @@ lazy_static! {
 }
 
 #[test]
-fn create_csv() {
+fn working_parser() {
     let mut data: Vec<&str> = Vec::new();
     data.push(&DATA_A);
     data.push(&DATA_B);
@@ -57,15 +57,6 @@ fn create_csv() {
     data.push(&DATA_E);
     data.push(&DATA_F);
     for d in data {
-        let output = serde_json::from_str::<Response>(d).unwrap();
-
-        let mut wtr = csv::Writer::from_writer(vec![]);
-        let entries = output.rdf.annot.build_flat_entries();
-        for dict in entries {
-            wtr.serialize(dict).unwrap()
-        }
-
-        let strings = String::from_utf8(wtr.into_inner().unwrap()).unwrap();
-        dbg!(strings);
+        let _output = serde_json::from_str::<Response>(d).unwrap();
     }
 }

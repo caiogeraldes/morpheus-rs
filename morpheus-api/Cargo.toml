@@ -1,5 +1,7 @@
 [package]
 name = "morpheus-api"
+authors = ["Caio Geraldes <caio.geraldes@usp.br>"]
+description = "Library for querying and parsing the Perseids Morpheus API"
 version = "0.1.0"
 edition = "2021"
 

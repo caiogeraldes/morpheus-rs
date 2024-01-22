@@ -133,32 +133,32 @@ pub struct Agent {
     about: String,
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Debug)]
 pub struct FlatEntry {
-    headword: String,
-    headword_decl: Option<Declension>,
-    headword_gend: Option<Gender>,
-    stem: String,
-    suff: Option<String>,
-    decl: Option<Declension>,
-    pofs: String,
-    gend: Option<Gender>,
-    num: Option<Number>,
-    mood: Option<Mood>,
-    tense: Option<Tense>,
-    voice: Option<Voice>,
-    pers: Option<Person>,
-    case: Option<Case>,
-    dial: Option<String>,
-    stemtype: Option<String>,
-    morph: Option<String>,
-    derivtype: Option<String>,
+    pub headword: String,
+    pub headword_decl: Option<Declension>,
+    pub headword_gend: Option<Gender>,
+    pub stem: String,
+    pub suff: Option<String>,
+    pub decl: Option<Declension>,
+    pub pofs: String,
+    pub gend: Option<Gender>,
+    pub num: Option<Number>,
+    pub mood: Option<Mood>,
+    pub tense: Option<Tense>,
+    pub voice: Option<Voice>,
+    pub pers: Option<Person>,
+    pub case: Option<Case>,
+    pub dial: Option<String>,
+    pub stemtype: Option<String>,
+    pub morph: Option<String>,
+    pub derivtype: Option<String>,
 }
 
-impl Annotation {
+impl Response {
     pub fn build_flat_entries(&self) -> Vec<FlatEntry> {
         let mut v = vec![];
-        for body in &self.body {
+        for body in &self.rdf.annot.body {
             let entry = &body.entry;
             let mut flatten_entries = entry
                 .infl
@@ -187,6 +187,10 @@ impl Annotation {
             v.append(&mut flatten_entries);
         }
         return v;
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.rdf.annot.body.is_empty()
     }
 }
 

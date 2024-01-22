@@ -20,6 +20,14 @@ impl Query {
             API_URL, lang, engine, self.word
         )
     }
+
+    pub fn cache_name(&self) -> String {
+        let engine = match self.lang {
+            Language::Latin => "morpheuslat",
+            Language::Greek => "morpheusgrc",
+        };
+        format!("{}.{}", self.word, engine)
+    }
 }
 
 #[derive(Debug)]
@@ -50,6 +58,11 @@ impl QueryBuilder {
 
     pub fn set_lang_from_str(mut self, lang: &str) -> anyhow::Result<QueryBuilder> {
         self.lang = Some(Language::try_from(lang)?);
+        Ok(self)
+    }
+
+    pub fn set_lang(mut self, lang: Language) -> anyhow::Result<QueryBuilder> {
+        self.lang = Some(lang);
         Ok(self)
     }
 }

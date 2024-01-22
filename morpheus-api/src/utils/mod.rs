@@ -1,7 +1,9 @@
+use std::str::FromStr;
+
 use anyhow::anyhow;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize, Copy)]
 pub enum Language {
     #[serde(rename = "lat")]
     Latin,
@@ -18,6 +20,19 @@ impl TryFrom<&str> for Language {
             _ => Err(anyhow!("Unknown language: ${value}")),
         }
     }
+}
+
+impl FromStr for Language {
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let s = s.to_lowercase();
+        match s.as_str() {
+            "grc" | "g" | "greek" => Ok(Language::Greek),
+            "lat" | "l" | "latin" => Ok(Language::Latin),
+            _ => Err(anyhow!("Unknown language")),
+        }
+    }
+
+    type Err = anyhow::Error;
 }
 
 pub mod grammar;
