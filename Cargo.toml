@@ -1,5 +1,5 @@
 [workspace]
 package.authors = ["Caio Geraldes <caio.geraldes@usp.br>"]
-package.license = "MIT"
+package.license-file = "LICENSE"
 resolver = "1"
 members = ["api", "cli"]
