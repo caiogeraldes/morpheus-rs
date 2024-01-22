@@ -1,7 +1,7 @@
 [package]
 name = "morpheus-cli"
 authors.workspace = true
-license.workspace = true
+license-file.workspace = true
 description = "CLI tool for querying Perseids Morpheus API"
 version = "1.0.0"
 edition = "2021"
