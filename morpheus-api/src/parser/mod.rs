@@ -1,19 +1,9 @@
-use std::fmt::Display;
-
 use serde::{Deserialize, Serialize};
 use serde_with::{formats::PreferOne, serde_as, OneOrMany};
 
 mod utils;
 use crate::utils::{grammar::*, Language};
 use utils::*;
-
-pub trait Dictionary {
-    fn get_dicts(&self) -> Vec<Dict>;
-}
-
-pub trait Inflection {
-    fn get_infl(&self) -> Vec<Infl>;
-}
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Response {
@@ -27,34 +17,10 @@ impl Response {
     }
 }
 
-impl Dictionary for Response {
-    fn get_dicts(&self) -> Vec<Dict> {
-        self.rdf.get_dicts()
-    }
-}
-
-impl Inflection for Response {
-    fn get_infl(&self) -> Vec<Infl> {
-        self.rdf.get_infl()
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RDF {
     #[serde(rename = "Annotation")]
     annot: Annotation,
-}
-
-impl Dictionary for RDF {
-    fn get_dicts(&self) -> Vec<Dict> {
-        self.annot.get_dicts()
-    }
-}
-
-impl Inflection for RDF {
-    fn get_infl(&self) -> Vec<Infl> {
-        self.annot.get_infl()
-    }
 }
 
 #[serde_as]
@@ -68,62 +34,13 @@ pub struct Annotation {
     body: Vec<Body>,
 }
 
-impl Dictionary for Annotation {
-    fn get_dicts(&self) -> Vec<Dict> {
-        let mut v = vec![];
-        for body in &self.body {
-            v.push(body.get_dicts()[0].clone());
-        }
-        v
-    }
-}
-
-impl Inflection for Annotation {
-    fn get_infl(&self) -> Vec<Infl> {
-        let mut v = vec![];
-        for body in &self.body {
-            let mut infls = body.get_infl().clone();
-            v.append(&mut infls);
-        }
-        v
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Body {
     // about: String,
     // #[serde(rename = "type")]
     // body_type: BType,
-    rest: Rest,
-}
-
-impl Dictionary for Body {
-    fn get_dicts(&self) -> Vec<Dict> {
-        self.rest.get_dicts()
-    }
-}
-
-impl Inflection for Body {
-    fn get_infl(&self) -> Vec<Infl> {
-        self.rest.get_infl()
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Rest {
+    #[serde(deserialize_with = "parse_inner_entry", rename(deserialize = "rest"))]
     entry: Entry,
-}
-
-impl Dictionary for Rest {
-    fn get_dicts(&self) -> Vec<Dict> {
-        self.entry.get_dicts()
-    }
-}
-
-impl Inflection for Rest {
-    fn get_infl(&self) -> Vec<Infl> {
-        self.entry.get_infl()
-    }
 }
 
 #[serde_as]
@@ -135,22 +52,10 @@ pub struct Entry {
     infl: Vec<Infl>,
 }
 
-impl Dictionary for super::parser::Entry {
-    fn get_dicts(&self) -> Vec<Dict> {
-        Vec::from([self.dict.clone()])
-    }
-}
-
-impl Inflection for Entry {
-    fn get_infl(&self) -> Vec<Infl> {
-        self.infl.clone()
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Dict {
-    #[serde(rename = "hdwd")]
-    headword: Headword,
+    #[serde(rename = "hdwd", deserialize_with = "parse_ds_value")]
+    headword: String,
     pofs: OrderedValue,
     #[serde(deserialize_with = "parse_ds_option", default)]
     decl: Option<Declension>,
@@ -158,26 +63,11 @@ pub struct Dict {
     gend: Option<Gender>,
 }
 
-impl Display for Dict {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match (&self.decl, &self.gend) {
-            (None, None) => write!(f, "{}, {}", self.headword, self.pofs),
-            (Some(decl), Some(gend)) => {
-                write!(f, "{}, {} ({} {})", self.headword, self.pofs, decl, gend)
-            }
-            _ => todo!(),
-        }
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Infl {
-    #[serde(skip_serializing)]
     term: Term,
-    #[serde(deserialize_with = "parse_stem_from_term", default)]
-    stem: String,
-    #[serde(skip_serializing)]
-    pofs: OrderedValue,
+    #[serde(deserialize_with = "parse_ds_value")]
+    pofs: String,
     #[serde(deserialize_with = "parse_ds_option", default)]
     decl: Option<Declension>,
     // Analysis
@@ -207,63 +97,6 @@ pub struct Infl {
     derivtype: Option<String>,
 }
 
-impl Display for Infl {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        let mut analysis = String::new();
-        if let Some(mood) = &self.mood {
-            analysis.push_str(&format!("{} ", mood));
-        }
-        if let Some(tense) = &self.tense {
-            analysis.push_str(&format!("{} ", tense));
-        }
-        if let Some(voice) = &self.voice {
-            analysis.push_str(&format!("{} ", voice));
-        }
-        if let Some(pers) = &self.pers {
-            analysis.push_str(&format!("{} ", pers));
-        }
-        if let Some(num) = &self.num {
-            analysis.push_str(&format!("{} ", num));
-        }
-        if let Some(gend) = &self.gend {
-            analysis.push_str(&format!("{} ", gend));
-        }
-        if let Some(case) = &self.case {
-            analysis.push_str(&format!("{} ", case));
-        }
-
-        let mut wc = String::new();
-        if let Some(stemtype) = &self.stemtype {
-            wc.push_str(stemtype);
-        }
-        if let Some(derivtype) = &self.derivtype {
-            wc.push(',');
-            wc.push(' ');
-            wc.push_str(derivtype);
-        }
-        if let Some(morph) = &self.morph {
-            wc.push(',');
-            wc.push(' ');
-            wc.push_str(morph);
-        }
-
-        let dial: String = match &self.dial {
-            Some(d) => d.clone(),
-            None => "attic".into(),
-        };
-
-        write!(
-            f,
-            "{}, {}, {}, {}, {}",
-            self.term,
-            self.pofs,
-            analysis.trim(),
-            dial,
-            wc.trim()
-        )
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Term {
     // lang: Language,
@@ -273,27 +106,6 @@ pub struct Term {
     suff: Option<String>,
 }
 
-impl Display for Term {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match &self.suff {
-            Some(suff) => write!(f, "{} (-{})", self.stem, suff),
-            None => write!(f, "{}", self.stem),
-        }
-    }
-}
-
-#[derive(Serialize, Deserialize, Debug, Clone)]
-pub struct Value {
-    #[serde(rename = "$")]
-    value: String,
-}
-
-impl Display for Value {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct OrderedValue {
     order: u8,
@@ -301,23 +113,11 @@ pub struct OrderedValue {
     value: String,
 }
 
-impl Display for OrderedValue {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Headword {
     lang: Language,
     #[serde(rename = "$")]
     value: String,
-}
-
-impl Display for Headword {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.value)
-    }
 }
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
@@ -342,57 +142,56 @@ pub struct Agent {
     about: String,
 }
 
-#[derive(Serialize, Debug, Clone)]
-pub struct FlatInfl {
+#[derive(Serialize)]
+pub struct FlatEntry {
+    headword: String,
+    headword_decl: Option<Declension>,
+    headword_gend: Option<Gender>,
     stem: String,
     suff: Option<String>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     decl: Option<Declension>,
+    pofs: String,
     // Analysis
-    #[serde(deserialize_with = "parse_ds_option", default)]
     gend: Option<Gender>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     num: Option<Number>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     mood: Option<Mood>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     tense: Option<Tense>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     voice: Option<Voice>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     pers: Option<Person>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     case: Option<Case>,
     // Dialect
-    #[serde(deserialize_with = "parse_ds_option", default)]
     dial: Option<String>,
     // Word class
-    #[serde(deserialize_with = "parse_ds_option", default)]
     stemtype: Option<String>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     morph: Option<String>,
-    #[serde(deserialize_with = "parse_ds_option", default)]
     derivtype: Option<String>,
 }
 
-impl From<Infl> for FlatInfl {
-    fn from(value: Infl) -> Self {
-        Self {
-            stem: value.term.stem,
-            suff: value.term.suff,
-            decl: value.decl,
-            gend: value.gend,
-            num: value.num,
-            mood: value.mood,
-            tense: value.tense,
-            voice: value.voice,
-            pers: value.pers,
-            case: value.case,
-            dial: value.dial,
-            stemtype: value.stemtype,
-            morph: value.morph,
-            derivtype: value.derivtype,
-        }
+impl Entry {
+    pub fn build_flat_entries(&self) -> Vec<FlatEntry> {
+        self.infl
+            .iter()
+            .map(|value| FlatEntry {
+                headword: self.dict.headword.clone(),
+                headword_gend: self.dict.gend.clone(),
+                headword_decl: self.dict.decl.clone(),
+                stem: value.term.stem.clone(),
+                suff: value.term.suff.clone(),
+                pofs: value.pofs.clone(),
+                decl: value.decl.clone(),
+                gend: value.gend.clone(),
+                num: value.num.clone(),
+                mood: value.mood.clone(),
+                tense: value.tense.clone(),
+                voice: value.voice.clone(),
+                pers: value.pers.clone(),
+                case: value.case.clone(),
+                dial: value.dial.clone(),
+                stemtype: value.stemtype.clone(),
+                morph: value.morph.clone(),
+                derivtype: value.derivtype.clone(),
+            })
+            .collect()
     }
 }
 

@@ -1,7 +1,5 @@
 use serde::{de::Deserializer, Deserialize};
 
-use crate::parser::Term;
-
 pub(super) fn parse_ds_option<'de, D, T: Deserialize<'de>>(
     deserializer: D,
 ) -> Result<Option<T>, D::Error>
@@ -34,11 +32,14 @@ where
     Ok(Inner::deserialize(deserializer)?.value)
 }
 
-pub(super) fn parse_stem_from_term<'de, D>(deserializer: D) -> Result<String, D::Error>
+pub(super) fn parse_inner_entry<'de, D, T: Deserialize<'de>>(deserializer: D) -> Result<T, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let outer = Term::deserialize(deserializer)?;
-    dbg!(&outer);
-    Ok(outer.stem.clone())
+    #[derive(Deserialize)]
+    struct Inner<T> {
+        entry: T,
+    }
+
+    Ok(Inner::deserialize(deserializer)?.entry)
 }
