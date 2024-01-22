@@ -1,3 +1,5 @@
 [workspace]
+package.authors = ["Caio Geraldes <caio.geraldes@usp.br>"]
+package.license = "MIT"
 resolver = "1"
-members = ["morpheus-api", "morpheus-cli"]
+members = ["api", "cli"]
