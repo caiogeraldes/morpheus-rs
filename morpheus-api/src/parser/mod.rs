@@ -11,12 +11,6 @@ pub struct Response {
     rdf: RDF,
 }
 
-impl Response {
-    pub fn get_body(&self) -> Vec<Body> {
-        self.rdf.annot.body.clone()
-    }
-}
-
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct RDF {
     #[serde(rename = "Annotation")]
@@ -26,9 +20,9 @@ pub struct RDF {
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Annotation {
-    // about: String,
-    // creator: Creator,
-    // created: Created,
+    about: String,
+    creator: Creator,
+    created: Created,
     #[serde(rename = "Body", default)]
     #[serde_as(deserialize_as = "OneOrMany<_, PreferOne>")]
     body: Vec<Body>,
@@ -36,9 +30,9 @@ pub struct Annotation {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Body {
-    // about: String,
-    // #[serde(rename = "type")]
-    // body_type: BType,
+    about: String,
+    #[serde(rename = "type")]
+    body_type: BType,
     #[serde(deserialize_with = "parse_inner_entry", rename(deserialize = "rest"))]
     entry: Entry,
 }
@@ -46,7 +40,7 @@ pub struct Body {
 #[serde_as]
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Entry {
-    // uri: Option<String>,
+    uri: Option<String>,
     dict: Dict,
     #[serde_as(deserialize_as = "OneOrMany<_, PreferOne>")]
     infl: Vec<Infl>,
@@ -70,7 +64,6 @@ pub struct Infl {
     pofs: String,
     #[serde(deserialize_with = "parse_ds_option", default)]
     decl: Option<Declension>,
-    // Analysis
     #[serde(deserialize_with = "parse_ds_option", default)]
     gend: Option<Gender>,
     #[serde(deserialize_with = "parse_ds_option", default)]
@@ -85,10 +78,8 @@ pub struct Infl {
     pers: Option<Person>,
     #[serde(deserialize_with = "parse_ds_option", default)]
     case: Option<Case>,
-    // Dialect
     #[serde(deserialize_with = "parse_ds_option", default)]
     dial: Option<String>,
-    // Word class
     #[serde(deserialize_with = "parse_ds_option", default)]
     stemtype: Option<String>,
     #[serde(deserialize_with = "parse_ds_option", default)]
@@ -99,7 +90,7 @@ pub struct Infl {
 
 #[derive(Serialize, Deserialize, Debug, Clone)]
 pub struct Term {
-    // lang: Language,
+    lang: Language,
     #[serde(deserialize_with = "parse_ds_value", default)]
     stem: String,
     #[serde(deserialize_with = "parse_ds_option", default)]
@@ -151,7 +142,6 @@ pub struct FlatEntry {
     suff: Option<String>,
     decl: Option<Declension>,
     pofs: String,
-    // Analysis
     gend: Option<Gender>,
     num: Option<Number>,
     mood: Option<Mood>,
@@ -159,39 +149,44 @@ pub struct FlatEntry {
     voice: Option<Voice>,
     pers: Option<Person>,
     case: Option<Case>,
-    // Dialect
     dial: Option<String>,
-    // Word class
     stemtype: Option<String>,
     morph: Option<String>,
     derivtype: Option<String>,
 }
 
-impl Entry {
+impl Annotation {
     pub fn build_flat_entries(&self) -> Vec<FlatEntry> {
-        self.infl
-            .iter()
-            .map(|value| FlatEntry {
-                headword: self.dict.headword.clone(),
-                headword_gend: self.dict.gend.clone(),
-                headword_decl: self.dict.decl.clone(),
-                stem: value.term.stem.clone(),
-                suff: value.term.suff.clone(),
-                pofs: value.pofs.clone(),
-                decl: value.decl.clone(),
-                gend: value.gend.clone(),
-                num: value.num.clone(),
-                mood: value.mood.clone(),
-                tense: value.tense.clone(),
-                voice: value.voice.clone(),
-                pers: value.pers.clone(),
-                case: value.case.clone(),
-                dial: value.dial.clone(),
-                stemtype: value.stemtype.clone(),
-                morph: value.morph.clone(),
-                derivtype: value.derivtype.clone(),
-            })
-            .collect()
+        let mut v = vec![];
+        for body in &self.body {
+            let entry = &body.entry;
+            let mut flatten_entries = entry
+                .infl
+                .iter()
+                .map(|value| FlatEntry {
+                    headword: entry.dict.headword.clone(),
+                    headword_gend: entry.dict.gend.clone(),
+                    headword_decl: entry.dict.decl.clone(),
+                    stem: value.term.stem.clone(),
+                    suff: value.term.suff.clone(),
+                    pofs: value.pofs.clone(),
+                    decl: value.decl.clone(),
+                    gend: value.gend.clone(),
+                    num: value.num.clone(),
+                    mood: value.mood.clone(),
+                    tense: value.tense.clone(),
+                    voice: value.voice.clone(),
+                    pers: value.pers.clone(),
+                    case: value.case.clone(),
+                    dial: value.dial.clone(),
+                    stemtype: value.stemtype.clone(),
+                    morph: value.morph.clone(),
+                    derivtype: value.derivtype.clone(),
+                })
+                .collect();
+            v.append(&mut flatten_entries);
+        }
+        return v;
     }
 }
 
