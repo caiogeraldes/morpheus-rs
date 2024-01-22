@@ -26,6 +26,9 @@ struct Args {
     /// Keep query word in CSV output
     #[arg(long, short, default_value_t = false)]
     query: bool,
+    /// Pretty print CSV output
+    #[arg(long, short, default_value_t = false)]
+    pretty: bool,
     /// Force betacode conversion of <WORD> (forces set language to Greek)
     #[arg(long, short, default_value_t = false)]
     betacode: bool,
@@ -153,7 +156,11 @@ async fn main() -> anyhow::Result<()> {
                 }
             }
         } else {
-            print_from_csv_str(&csv);
+            if args.pretty {
+                print_from_csv_str(&csv);
+            } else {
+                println!("{}", &csv);
+            }
         }
     }
 
