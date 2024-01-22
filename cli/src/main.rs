@@ -35,10 +35,9 @@ struct Args {
     /// Language for the query, can be grc or lat.
     #[arg(long, short)]
     language: Option<Language>,
-    /// Used cached responses, the default path for the cache is $HOME/.cache/morpheus_rs.
-    /// The cache path can be set with the enviromenment variabel MORPHEUS_CACHE_DIR.
-    #[arg(long, short, default_value_t = true)]
-    cache: bool,
+    /// Disable use of cached responses
+    #[arg(long, short, default_value_t = false)]
+    uncached: bool,
     /// Prints full JSON response from Perseids Morpheus API
     #[arg(long, short, default_value_t = false)]
     json: bool,
@@ -79,16 +78,16 @@ async fn main() -> anyhow::Result<()> {
         .build()?;
 
     let response: String;
-    if args.cache {
+    if !args.uncached {
         let cache_dir = match env::var("MORPHEUS_CACHE_DIR") {
             Ok(value) => path::PathBuf::from(value),
             Err(_) => {
                 let home = home::home_dir().unwrap();
                 warn!(
                     "Unknown env variable MORPHEUS_CACHE_DIR, assuming {:?}",
-                    home.join(".cache/morpheus_api")
+                    home.join(".cache/morpheus_rs")
                 );
-                home.join(".cache/morpheus_api")
+                home.join(".cache/morpheus_rs")
             }
         };
         if !cache_dir.is_dir() {
